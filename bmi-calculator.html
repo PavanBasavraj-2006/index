@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BMI & Diet Planner</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --surface2: #1e1e1e;
+      --border: rgba(255,255,255,0.08);
+      --accent: #c8f55a;
+      --text: #f0ede6;
+      --muted: #888;
+      --danger: #ff6b6b;
+      --info: #6bcaff;
+      --success: #6bff9e;
+      --warn: #f5c842;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overflow-x: hidden; }
+    body::before { content:''; position:fixed; top:-200px; right:-200px; width:600px; height:600px; border-radius:50%; background:radial-gradient(circle,rgba(200,245,90,0.07) 0%,transparent 70%); pointer-events:none; z-index:0; }
+    body::after  { content:''; position:fixed; bottom:-200px; left:-100px; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle,rgba(107,202,255,0.05) 0%,transparent 70%); pointer-events:none; z-index:0; }
+
+    .page { position:relative; z-index:1; max-width:720px; margin:0 auto; padding:60px 24px 80px; }
+
+    header { margin-bottom:52px; animation:fadeUp 0.7s ease both; }
+    header .eyebrow { font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--accent); font-weight:500; margin-bottom:14px; }
+    header h1 { font-family:'DM Serif Display',serif; font-size:clamp(2.4rem,6vw,3.6rem); line-height:1.1; letter-spacing:-.02em; }
+    header h1 em { font-style:italic; color:var(--accent); }
+    header p { margin-top:16px; font-size:15px; color:var(--muted); font-weight:300; line-height:1.6; }
+
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:32px; margin-bottom:16px; animation:fadeUp 0.7s ease both; }
+
+    .section-label { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:20px; }
+
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+    label { display:block; font-size:12px; color:var(--muted); letter-spacing:.05em; margin-bottom:8px; }
+
+    input[type="number"], select {
+      width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px;
+      padding:12px 14px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:15px;
+      outline:none; transition:border-color .2s,background .2s; appearance:none; -webkit-appearance:none;
+    }
+    input[type="number"]:focus, select:focus { border-color:var(--accent); background:#222; }
+    select { cursor:pointer; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px; }
+
+    .gender-toggle { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .gender-btn { padding:12px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-family:'DM Sans',sans-serif; font-size:14px; cursor:pointer; transition:all .2s; text-align:center; }
+    .gender-btn.active { background:rgba(200,245,90,0.1); border-color:var(--accent); color:var(--accent); }
+
+    .calc-btn { width:100%; padding:16px; border-radius:14px; border:none; background:var(--accent); color:#0d0d0d; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:500; cursor:pointer; letter-spacing:.02em; transition:transform .15s,opacity .15s; margin-top:24px; }
+    .calc-btn:hover { opacity:.9; transform:translateY(-1px); }
+    .calc-btn:active { transform:scale(.99); }
+
+    #results { display:none; animation:fadeUp .5s ease both; }
+
+    .result-hero { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:32px; margin-bottom:16px; display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:20px; }
+    .bmi-number { font-family:'DM Serif Display',serif; font-size:clamp(4rem,12vw,7rem); line-height:1; letter-spacing:-.03em; }
+    .bmi-category { display:inline-block; padding:5px 14px; border-radius:999px; font-size:13px; font-weight:500; margin-top:10px; }
+    .bmi-right { text-align:right; }
+    .bmi-right .label-sm { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+    .bmi-right .ideal { font-size:22px; font-family:'DM Serif Display',serif; }
+
+    .bmi-bar-wrap { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:24px 32px; margin-bottom:16px; }
+    .bmi-bar { position:relative; height:8px; border-radius:4px; background:linear-gradient(to right,#6bcaff 0%,#6bff9e 28%,#f5c842 58%,#ff6b6b 100%); margin:20px 0 10px; }
+    .bmi-bar-marker { position:absolute; top:50%; transform:translate(-50%,-50%); width:18px; height:18px; border-radius:50%; background:#fff; border:3px solid var(--bg); box-shadow:0 0 0 2px #fff; transition:left .6s cubic-bezier(.34,1.56,.64,1); }
+    .bmi-bar-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:8px; }
+
+    .cal-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+    .cal-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px 16px; text-align:center; transition:transform .2s; }
+    .cal-card:hover { transform:translateY(-2px); }
+    .cal-card.highlight { border-color:rgba(200,245,90,0.3); background:rgba(200,245,90,0.05); }
+    .cal-card .cal-label { font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:10px; }
+    .cal-card .cal-num { font-family:'DM Serif Display',serif; font-size:2rem; line-height:1; }
+    .cal-card.highlight .cal-num { color:var(--accent); }
+    .cal-card .cal-unit { font-size:11px; color:var(--muted); margin-top:4px; }
+
+    .diet-section { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:32px; margin-bottom:16px; }
+    .diet-section h2 { font-family:'DM Serif Display',serif; font-size:1.6rem; margin-bottom:6px; }
+    .diet-section .sub { font-size:13px; color:var(--muted); margin-bottom:24px; }
+
+    .goal-tabs { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:28px; }
+    .goal-tab { padding:12px 8px; border-radius:12px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; cursor:pointer; transition:all .2s; text-align:center; line-height:1.4; }
+    .goal-tab span { font-weight:300; font-size:10px; display:block; margin-top:2px; }
+    .goal-tab[data-goal="cutting"].active  { color:var(--info);    background:rgba(107,202,255,0.08); border-color:var(--info); }
+    .goal-tab[data-goal="lean"].active     { color:var(--accent);  background:rgba(200,245,90,0.08);  border-color:var(--accent); }
+    .goal-tab[data-goal="heavy"].active    { color:var(--danger);  background:rgba(255,107,107,0.08); border-color:var(--danger); }
+    .goal-tab[data-goal="sports"].active   { color:var(--warn);    background:rgba(245,200,66,0.08);  border-color:var(--warn); }
+
+    .diet-panel { display:none; }
+    .diet-panel.active { display:block; animation:fadeUp .4s ease both; }
+
+    .macro-row { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:24px; }
+    .macro-box { background:var(--surface2); border-radius:12px; padding:16px 12px; text-align:center; }
+    .macro-box .m-label { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:6px; }
+    .macro-box .m-val { font-family:'DM Serif Display',serif; font-size:1.7rem; line-height:1; }
+    .macro-box .m-unit { font-size:11px; color:var(--muted); margin-top:3px; }
+    .macro-box.protein .m-val { color:var(--danger); }
+    .macro-box.carbs   .m-val { color:var(--warn); }
+    .macro-box.fats    .m-val { color:var(--info); }
+
+    .meal-item { border-top:1px solid var(--border); padding:16px 0; }
+    .meal-item:last-child { border-bottom:1px solid var(--border); }
+    .meal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .meal-name { font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:.08em; }
+    .meal-kcal { font-size:12px; color:var(--muted); }
+    .meal-foods { font-size:14px; color:var(--muted); line-height:1.6; }
+
+    .tips-wrap { margin-top:20px; background:var(--surface2); border-radius:12px; padding:16px 18px; }
+    .tips-wrap .tip-label { font-size:10px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:10px; }
+    .tip-item { font-size:13px; color:var(--muted); padding:6px 0; border-bottom:1px solid var(--border); line-height:1.5; }
+    .tip-item:last-child { border-bottom:none; }
+    .tip-dot { display:inline-block; width:5px; height:5px; border-radius:50%; margin-right:8px; vertical-align:middle; flex-shrink:0; }
+
+    .footnote { font-size:12px; color:#555; text-align:center; margin-top:40px; line-height:1.6; }
+
+    @keyframes fadeUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+
+    @media (max-width:520px) {
+      .grid2 { grid-template-columns:1fr 1fr; }
+      .cal-grid { grid-template-columns:1fr; }
+      .goal-tabs { grid-template-columns:1fr 1fr; }
+      .result-hero { flex-direction:column; align-items:flex-start; }
+      .bmi-right { text-align:left; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="eyebrow">BMI & Diet Planner</div>
+    <h1>Know your body.<br/><em>Fuel it right.</em></h1>
+    <p>Get your BMI, calorie targets, and a full personalised diet plan — cutting, lean bulk, heavy bulk, or sports performance.</p>
+  </header>
+
+  <div class="card">
+    <div class="section-label">Your details</div>
+    <div class="grid2" style="margin-bottom:16px;">
+      <div>
+        <label>Age (years)</label>
+        <input type="number" id="age" value="25" min="10" max="100" />
+      </div>
+      <div>
+        <label>Gender</label>
+        <div class="gender-toggle">
+          <button class="gender-btn active" id="btn-male" onclick="setGender('male')">Male</button>
+          <button class="gender-btn" id="btn-female" onclick="setGender('female')">Female</button>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div>
+        <label>Height (cm)</label>
+        <input type="number" id="height" value="170" min="100" max="250" />
+      </div>
+      <div>
+        <label>Weight (kg)</label>
+        <input type="number" id="weight" value="70" min="20" max="300" />
+      </div>
+      <div class="grid2" style="margin-top:16px;">
+ 
+      </div>
+    
+      
+    </div>
+
+  
+
+  <div class="card">
+    <div class="section-label">Activity level</div>
+    <select id="activity">
+      <option value="1.2">Sedentary — little or no exercise</option>
+      <option value="1.375">Lightly active — 1–3 days/week</option>
+      <option value="1.55" selected>Moderately active — 3–5 days/week</option>
+      <option value="1.725">Very active — 6–7 days/week</option>
+      <option value="1.9">Extra active — intense daily exercise</option>
+    </select>
+    <button class="calc-btn" onclick="calculate()">Calculate my plan →</button>
+  </div>
+
+  <div id="results">
+
+    <div class="result-hero">
+      <div>
+        <div style="font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Your BMI</div>
+        <div class="bmi-number" id="bmi-num">—</div>
+        <div id="bmi-cat" class="bmi-category"></div>
+        <!--body fat percentage-->
+        <div style="margin-top:12px;">
+  <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);">Body Fat %</div>
+  <div style="font-size:22px;font-family:'DM Serif Display',serif;" id="body-fat">—</div>
+</div>
+      </div>
+      <div class="bmi-right">
+        <div class="label-sm">Ideal weight range</div>
+        <div class="ideal" id="ideal-wt">— kg</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">for your height</div>
+      </div>
+    </div>
+
+    <div class="bmi-bar-wrap">
+      <div style="font-size:12px;color:var(--muted);">Where you fall on the scale</div>
+      <div class="bmi-bar"><div class="bmi-bar-marker" id="bar-marker" style="left:0%"></div></div>
+      <div class="bmi-bar-labels">
+        <span>Underweight<br/>&lt;18.5</span>
+        <span style="text-align:center;">Normal<br/>18.5–24.9</span>
+        <span style="text-align:center;">Overweight<br/>25–29.9</span>
+        <span style="text-align:right;">Obese<br/>&#8805;30</span>
+      </div>
+     
+    </div>
+
+    <div class="cal-grid">
+      <div class="cal-card">
+        <div class="cal-label">Cutting</div>
+        <div class="cal-num" id="cal-cut">—</div>
+        <div class="cal-unit">kcal / day</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">−500 deficit</div>
+      </div>
+      <div class="cal-card highlight">
+        <div class="cal-label">Maintain</div>
+        <div class="cal-num" id="cal-maintain">—</div>
+        <div class="cal-unit">kcal / day</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">your TDEE</div>
+      </div>
+      <div class="cal-card">
+        <div class="cal-label">Bulking</div>
+        <div class="cal-num" id="cal-bulk">—</div>
+        <div class="cal-unit">kcal / day</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">+500 surplus</div>
+      </div>
+      <!--body fat percentage-->
+       
+    </div>
+
+    <!-- Diet Plan -->
+    <div class="diet-section">
+      <h2>Your diet plan</h2>
+      <div class="sub">Choose your goal to see personalised macros and a full daily meal plan.</div>
+
+      <div class="goal-tabs">
+        <button class="goal-tab active" data-goal="cutting" onclick="showGoal('cutting')">✂ Cutting<span>Fat loss</span></button>
+        <button class="goal-tab" data-goal="lean"    onclick="showGoal('lean')">&#9889; Lean Bulk<span>Clean muscle gain</span></button>
+        <button class="goal-tab" data-goal="heavy"   onclick="showGoal('heavy')">&#128170; Heavy Bulk<span>Max mass</span></button>
+        <button class="goal-tab" data-goal="sports"  onclick="showGoal('sports')">&#127941; Sports<span>Performance</span></button>
+      </div>
+
+      <!-- CUTTING -->
+      <div class="diet-panel active" id="panel-cutting">
+        <div class="macro-row">
+          <div class="macro-box protein"><div class="m-label">Protein</div><div class="m-val" id="cut-prot">—</div><div class="m-unit">g / day</div></div>
+          <div class="macro-box carbs">  <div class="m-label">Carbs</div>  <div class="m-val" id="cut-carb">—</div><div class="m-unit">g / day</div></div>
+          <div class="macro-box fats">   <div class="m-label">Fats</div>   <div class="m-val" id="cut-fat">—</div> <div class="m-unit">g / day</div></div>
+        </div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Breakfast</span><span class="meal-kcal" id="c-m1"></span></div><div class="meal-foods">4 egg whites + 1 whole egg omelette &middot; 1 slice whole grain toast &middot; Black coffee or green tea</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Mid-Morning</span><span class="meal-kcal" id="c-m2"></span></div><div class="meal-foods">1 cup low-fat Greek yogurt &middot; 1 small apple</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Lunch</span><span class="meal-kcal" id="c-m3"></span></div><div class="meal-foods">Grilled chicken breast (150g) &middot; Large green salad with lemon dressing &middot; 1/2 cup brown rice</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Afternoon Snack</span><span class="meal-kcal" id="c-m4"></span></div><div class="meal-foods">1 scoop whey protein in water &middot; 10 almonds</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Dinner</span><span class="meal-kcal" id="c-m5"></span></div><div class="meal-foods">Baked fish — tilapia or cod (150g) &middot; Steamed broccoli &amp; spinach &middot; 1/2 cup sweet potato</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Pre-Sleep</span><span class="meal-kcal"></span></div><div class="meal-foods">1 cup low-fat cottage cheese &middot; Herbal tea</div></div>
+        <div class="tips-wrap">
+          <div class="tip-label">Cutting tips</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--info)"></span>Drink 3–4 litres of water daily to reduce hunger and support metabolism</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--info)"></span>Keep protein high (2–2.4g/kg) to preserve muscle while in a calorie deficit</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--info)"></span>Avoid liquid calories — no juice, soda, or alcohol</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--info)"></span>Do 3–4 cardio sessions per week — HIIT or steady-state both work</div>
+        </div>
+      </div>
+
+      <!-- LEAN BULK -->
+      <div class="diet-panel" id="panel-lean">
+        <div class="macro-row">
+          <div class="macro-box protein"><div class="m-label">Protein</div><div class="m-val" id="l-prot">—</div><div class="m-unit">g / day</div></div>
+          <div class="macro-box carbs">  <div class="m-label">Carbs</div>  <div class="m-val" id="l-carb">—</div><div class="m-unit">g / day</div></div>
+          <div class="macro-box fats">   <div class="m-label">Fats</div>   <div class="m-val" id="l-fat">—</div> <div class="m-unit">g / day</div></div>
+        </div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Breakfast</span><span class="meal-kcal" id="l-m1"></span></div><div class="meal-foods">3 whole eggs + 2 whites scrambled &middot; 1 cup oats with banana &middot; 1 glass low-fat milk</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Mid-Morning</span><span class="meal-kcal" id="l-m2"></span></div><div class="meal-foods">Greek yogurt + mixed berries &middot; 1 slice whole grain toast with peanut butter</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Lunch</span><span class="meal-kcal" id="l-m3"></span></div><div class="meal-foods">Chicken breast (180g) &middot; 1 cup brown rice &middot; Stir-fried vegetables with olive oil</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Pre-Workout</span><span class="meal-kcal" id="l-m4"></span></div><div class="meal-foods">1 banana &middot; 1 scoop whey protein</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Dinner</span><span class="meal-kcal" id="l-m5"></span></div><div class="meal-foods">Salmon fillet (180g) &middot; 1 cup quinoa &middot; Roasted vegetables — broccoli, peppers, zucchini</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Before Bed</span><span class="meal-kcal"></span></div><div class="meal-foods">Casein protein shake &middot; 1 tbsp almond butter</div></div>
+        <div class="tips-wrap">
+          <div class="tip-label">Lean bulk tips</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--accent)"></span>Aim for 250–350 kcal surplus — slow clean gains mean less fat storage</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--accent)"></span>Track body weight weekly — aim to gain 0.25–0.5 kg per week maximum</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--accent)"></span>Prioritise compound lifts: squats, deadlifts, bench press, barbell rows</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--accent)"></span>Get 7–9 hours of sleep — muscle is built at rest, not in the gym</div>
+        </div>
+      </div>
+
+      <!-- HEAVY BULK -->
+      <div class="diet-panel" id="panel-heavy">
+        <div class="macro-row">
+          <div class="macro-box protein"><div class="m-label">Protein</div><div class="m-val" id="h-prot">—</div><div class="m-unit">g / day</div></div>
+          <div class="macro-box carbs">  <div class="m-label">Carbs</div>  <div class="m-val" id="h-carb">—</div><div class="m-unit">g / day</div></div>
+          <div class="macro-box fats">   <div class="m-label">Fats</div>   <div class="m-val" id="h-fat">—</div> <div class="m-unit">g / day</div></div>
+        </div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Breakfast</span><span class="meal-kcal" id="h-m1"></span></div><div class="meal-foods">4 whole eggs &middot; 2 cups oats with whole milk &middot; 2 slices whole grain toast &middot; 1 banana</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Mid-Morning</span><span class="meal-kcal" id="h-m2"></span></div><div class="meal-foods">Mass gainer shake or 1.5 scoop whey + oats + peanut butter + whole milk &middot; Handful mixed nuts</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Lunch</span><span class="meal-kcal" id="h-m3"></span></div><div class="meal-foods">Beef or chicken (250g) &middot; 2 cups white rice &middot; Beans or lentils &middot; Full-fat yogurt</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Pre-Workout</span><span class="meal-kcal" id="h-m4"></span></div><div class="meal-foods">2 slices bread with peanut butter &amp; honey &middot; 1 scoop whey protein</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Post-Workout</span><span class="meal-kcal"></span></div><div class="meal-foods">Whey protein shake &middot; 1 banana &middot; Dextrose or fast carbs</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Dinner</span><span class="meal-kcal" id="h-m5"></span></div><div class="meal-foods">Steak or chicken thighs (250g) &middot; 2 cups pasta or rice &middot; Mixed vegetables with butter &middot; Full glass whole milk</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Before Bed</span><span class="meal-kcal"></span></div><div class="meal-foods">Casein protein or cottage cheese (200g) &middot; 1 tbsp peanut butter</div></div>
+        <div class="tips-wrap">
+          <div class="tip-label">Heavy bulk tips</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--danger)"></span>Eat every 2.5–3 hours — never let the body go catabolic</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--danger)"></span>White rice and pasta are fine here — fast digestion fuels mass gaining</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--danger)"></span>Train heavy with low rep ranges (3–6 reps) and progressive overload every session</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--danger)"></span>Expect some fat gain — plan a cutting phase after 12–16 weeks of bulking</div>
+        </div>
+      </div>
+
+      <!-- SPORTS -->
+      <div class="diet-panel" id="panel-sports">
+        <div class="macro-row">
+          <div class="macro-box protein"><div class="m-label">Protein</div><div class="m-val" id="s-prot">—</div><div class="m-unit">g / day</div></div>
+          <div class="macro-box carbs">  <div class="m-label">Carbs</div>  <div class="m-val" id="s-carb">—</div><div class="m-unit">g / day</div></div>
+          <div class="macro-box fats">   <div class="m-label">Fats</div>   <div class="m-val" id="s-fat">—</div> <div class="m-unit">g / day</div></div>
+        </div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Breakfast</span><span class="meal-kcal" id="s-m1"></span></div><div class="meal-foods">3 whole eggs + 2 whites &middot; 1.5 cups oats with honey &middot; 1 glass orange juice &middot; Multivitamin</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Pre-Training</span><span class="meal-kcal" id="s-m2"></span></div><div class="meal-foods">Chicken or turkey (150g) &middot; 1 cup white rice &middot; 1 banana &middot; Electrolyte drink</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">During Training</span><span class="meal-kcal"></span></div><div class="meal-foods">Sports drink or coconut water &middot; Energy gel if session exceeds 75 minutes</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Post-Training Recovery</span><span class="meal-kcal" id="s-m3"></span></div><div class="meal-foods">40g whey protein + fast carbs (banana or dextrose) within 30 min &middot; Rehydrate aggressively</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Lunch</span><span class="meal-kcal" id="s-m4"></span></div><div class="meal-foods">Grilled fish or lean beef (200g) &middot; 2 cups brown rice or sweet potato &middot; Leafy salad with olive oil</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Dinner</span><span class="meal-kcal" id="s-m5"></span></div><div class="meal-foods">Salmon or chicken (200g) &middot; Whole grain pasta &middot; Steamed broccoli &amp; carrots &middot; Greek yogurt</div></div>
+        <div class="meal-item"><div class="meal-header"><span class="meal-name">Night Recovery</span><span class="meal-kcal"></span></div><div class="meal-foods">Cottage cheese (200g) &middot; Tart cherry juice for sleep recovery &middot; Magnesium supplement</div></div>
+        <div class="tips-wrap">
+          <div class="tip-label">Sports performance tips</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--warn)"></span>Carbs are your primary fuel — never skip them before training or competition</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--warn)"></span>Lose 2% bodyweight in sweat and performance drops 10% — hydration is critical</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--warn)"></span>Eat the recovery meal within 30 minutes post-session — the anabolic window is real for athletes</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--warn)"></span>Creatine monohydrate (5g/day) is the most evidence-backed performance supplement available</div>
+          <div class="tip-item"><span class="tip-dot" style="background:var(--warn)"></span>Periodise nutrition around your competition calendar — peak carb loads before events</div>
+        </div>
+      </div>
+
+      <!--fat percentage    -->
+   
+
+    </div>
+  </div>
+
+  <p class="footnote">Estimates based on Mifflin-St Jeor equation. Macros are general guidelines.<br/>Consult a registered dietitian or sports nutritionist for a clinical plan.</p>
+
+</div>
+
+<script>
+  let gender = 'male';
+
+  function setGender(g) {
+    gender = g;
+    document.getElementById('btn-male').classList.toggle('active', g === 'male');
+    document.getElementById('btn-female').classList.toggle('active', g === 'female');
+  }
+
+  function showGoal(goal) {
+    document.querySelectorAll('.goal-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector('[data-goal="'+goal+'"]').classList.add('active');
+    document.querySelectorAll('.diet-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-'+goal).classList.add('active');
+  }
+
+  function dist(total, percents) {
+    return percents.map(p => Math.round(total * p / 100));
+  }
+
+  function setMeals(ids, values) {
+    ids.forEach((id, i) => {
+      const el = document.getElementById(id);
+      if (el && values[i] !== undefined) el.textContent = '~' + values[i] + ' kcal';
+    });
+  }
+
+  function calculate() {
+    const age      = parseFloat(document.getElementById('age').value);
+    const height   = parseFloat(document.getElementById('height').value);
+    const weight   = parseFloat(document.getElementById('weight').value);
+    const activity = parseFloat(document.getElementById('activity').value);
+    if (!age || !height || !weight) return;
+
+    const bmi = weight / Math.pow(height / 100, 2);
+    // Body Fat % calculation (BMI-based)
+    let genderValue = (gender === 'male') ? 1 : 0;
+
+    let bodyFat = (1.20 * bmi) + (0.23 * age) - (10.8 * genderValue) - 5.4;
+
+    document.getElementById('body-fat').textContent = bodyFat.toFixed(1) + '%';
+
+    let bfColor = '#6bff9e'; // default
+
+    if (bodyFat < 10) bfColor = '#6bcaff';
+    else if (bodyFat < 20) bfColor = '#6bff9e';
+    else if (bodyFat < 30) bfColor = '#f5c842';
+    else bfColor = '#ff6b6b';
+
+document.getElementById('body-fat').style.color = bfColor;
+
+    let cat, catColor, catBg;
+    if      (bmi < 18.5) { cat='Underweight'; catColor='#6bcaff'; catBg='rgba(107,202,255,0.12)'; }
+    else if (bmi < 25)   { cat='Normal';      catColor='#6bff9e'; catBg='rgba(107,255,158,0.12)'; }
+    else if (bmi < 30)   { cat='Overweight';  catColor='#f5c842'; catBg='rgba(245,200,66,0.12)'; }
+    else                 { cat='Obese';        catColor='#ff6b6b'; catBg='rgba(255,107,107,0.12)'; }
+
+    document.getElementById('bmi-num').textContent = bmi.toFixed(1);
+    document.getElementById('bmi-num').style.color = catColor;
+    const catEl = document.getElementById('bmi-cat');
+    catEl.textContent = cat; catEl.style.background = catBg; catEl.style.color = catColor;
+
+    const pct = Math.min(Math.max((bmi - 10) / 30 * 100, 2), 98);
+    document.getElementById('bar-marker').style.left = pct.toFixed(1) + '%';
+
+    let bmr;
+    if (gender === 'male') bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+    else                   bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+
+    const tdee = Math.round(bmr * activity);
+    document.getElementById('cal-maintain').textContent = tdee.toLocaleString();
+    document.getElementById('cal-cut').textContent      = Math.round(tdee - 500).toLocaleString();
+    document.getElementById('cal-bulk').textContent     = Math.round(tdee + 500).toLocaleString();
+
+    const minW = Math.round(18.5 * Math.pow(height / 100, 2));
+    const maxW = Math.round(24.9 * Math.pow(height / 100, 2));
+    document.getElementById('ideal-wt').textContent = minW + '–' + maxW + ' kg';
+
+    // CUTTING macros
+    const cutKcal = tdee - 500;
+    const cutProt = Math.round(weight * 2.4);
+    const cutFat  = Math.round(cutKcal * 0.25 / 9);
+    const cutCarb = Math.max(Math.round((cutKcal - cutProt * 4 - cutFat * 9) / 4), 50);
+    document.getElementById('cut-prot').textContent = cutProt;
+    document.getElementById('cut-carb').textContent = cutCarb;
+    document.getElementById('cut-fat').textContent  = cutFat;
+    setMeals(['c-m1','c-m2','c-m3','c-m4','c-m5'], dist(cutKcal, [20,10,30,15,20]));
+
+    // LEAN BULK macros
+    const leanKcal = tdee + 250;
+    const leanProt = Math.round(weight * 2.0);
+    const leanFat  = Math.round(leanKcal * 0.28 / 9);
+    const leanCarb = Math.round((leanKcal - leanProt * 4 - leanFat * 9) / 4);
+    document.getElementById('l-prot').textContent = leanProt;
+    document.getElementById('l-carb').textContent = leanCarb;
+    document.getElementById('l-fat').textContent  = leanFat;
+    setMeals(['l-m1','l-m2','l-m3','l-m4','l-m5'], dist(leanKcal, [22,13,28,10,22]));
+
+    // HEAVY BULK macros
+    const heavyKcal = tdee + 700;
+    const heavyProt = Math.round(weight * 1.8);
+    const heavyFat  = Math.round(heavyKcal * 0.30 / 9);
+    const heavyCarb = Math.round((heavyKcal - heavyProt * 4 - heavyFat * 9) / 4);
+    document.getElementById('h-prot').textContent = heavyProt;
+    document.getElementById('h-carb').textContent = heavyCarb;
+    document.getElementById('h-fat').textContent  = heavyFat;
+    setMeals(['h-m1','h-m2','h-m3','h-m4','h-m5'], dist(heavyKcal, [20,12,22,10,20]));
+
+    // SPORTS macros
+    const sKcal = Math.round(tdee * 1.1);
+    const sProt = Math.round(weight * 1.8);
+    const sFat  = Math.round(sKcal * 0.22 / 9);
+    const sCarb = Math.round((sKcal - sProt * 4 - sFat * 9) / 4);
+    document.getElementById('s-prot').textContent = sProt;
+    document.getElementById('s-carb').textContent = sCarb;
+    document.getElementById('s-fat').textContent  = sFat;
+    setMeals(['s-m1','s-m2','s-m3','s-m4','s-m5'], dist(sKcal, [20,15,12,22,21]));
+
+    const res = document.getElementById('results');
+    res.style.display = 'block';
+    setTimeout(() => res.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+  }
+</script>
+</body>
+</html>
